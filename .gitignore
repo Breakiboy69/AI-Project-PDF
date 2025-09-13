@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+input/
+output/
+txtspace/
+DEV-LOG.txt
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,119 @@
+### Projekt-Zusammenfassung (Stand: letzter Chat)
+
+## Ziel
+Lokales KI-System auf deinem PC, das:
+- PDFs (Schule, Ausbildung, Heilpraktiker-Materialien) einliest
+- Texte extrahiert (inkl. OCR für Scans und Fotos)
+- Inhalte für dich oder deine Mom TTS-freundlich aufbereitet
+- optional Zusammenfassungen erstellen kann
+- komplett lokal läuft (LM Studio + LLaMA 3), ohne Cloud/Abos
+
+## Hardware
+- AMD Ryzen 9 5950X
+- 48 GB RAM
+- RTX 5080
+- sehr schnelle SSD
+→ mehr als genug Leistung für lokale LLMs und OCR.
+
+## Tools
+- **LM Studio** (Server für LLaMA 3 8B Instruct)
+- **LLaMA 3 8B Q4_K_M** als Hauptmodell
+- **PyMuPDF (fitz)** → Textextraktion aus PDFs
+- **Tesseract OCR** + Pillow → OCR für Bilder/gescannte PDFs
+- **Requests** → API-Calls an LM Studio
+- **Python 3.13 (für alle User installiert)**
+
+## Projektstruktur
+- `C:\Users\gamin\AI-Project-PDF\input` → PDFs rein
+- `C:\Users\gamin\AI-Project-PDF\txtspace` → Rohtext aus PDF
+- `C:\Users\gamin\AI-Project-PDF\output` → Ergebnis (clean/tts/summary)
+- `main.py` → Hauptskript
+- `extractor_v2.py` → optional besserer Extraktor (Layout, Tabellen, Annotations)
+
+## main.py – Funktionen
+- Liest PDFs ein
+- Extrahiert Text mit `extract_text()`:
+  - Standard (get_text + OCR)
+  - oder `extractor_v2.py` (wenn vorhanden)
+- Modi:
+  - `tts_passthrough`: kein LLM, Rohtext direkt für TTS
+  - `clean_for_tts`: LLM macht nur minimale Bereinigung (keine Kürzung)
+  - `summary`: echte Zusammenfassung
+- Chunking, um lange Texte in Abschnitten an LLM zu schicken
+- Ergebnis wird als `.txt` gespeichert
+
+## extractor_v2.py
+- Robusterer PDF-Parser:
+  - Block- & Zeilen-Sortierung
+  - Header/Footer-Erkennung
+  - Annotationen (z. B. Noteshelf-Textboxen)
+  - OCR mit Layoutdaten (`image_to_data`)
+  - Heuristik für Tabellen (Stateless/Stateful)
+
+## Probleme & Lösungen
+- **OCR bricht Text (silbentrennung, Zeilenumbrüche):**
+  → Regex-Normalisierung (`so-\nmit` → `somit`, unnötige Umbrüche raus)
+- **LLM kürzt/halluziniert:**
+  → strenger Prompt, Temperatur=0, top_p=0.1
+- **LLM hängt „zweite Mini-Completion“ an:**
+  → kleinere Chunks (5000 statt 8000 Zeichen), `max_tokens` gesetzt
+- **Englische Antworten:**
+  → Systemprompt strikt auf Deutsch
+
+## Status
+- `main.py` läuft stabil in drei Modi
+- `clean_for_tts` ist jetzt Standard für TTS
+- Ergebnisse kommen korrekt raus (nur Formatierungsfehler von OCR/PDF übrig)
+- Dev-Logs zeigen nachvollziehbare Requests
+
+## Fix-Ideen aus letztem Test
+A) **Bessere Vorreinigung (Normalize-Funktion)**  
+   - Soft Hyphen entfernen  
+   - Silbentrennungen glätten („so-\nmit“ → „somit“)  
+   - unnötige harte Zeilenumbrüche raus  
+   - Mehrfach-Leerzeichen/Leerzeilen reduzieren  
+
+   Beispielcode:
+   ```python
+   import re
+   def normalize_for_tts(text: str) -> str:
+       text = text.replace("\u00ad", "")
+       text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+       text = re.sub(r"(?<![.!?:])\n(?!\n)", " ", text)
+       text = re.sub(r"[ \t]{2,}", " ", text)
+       text = re.sub(r"\n{3,}", "\n\n", text)
+       return text.strip()
+   ```
+
+   Aufruf: direkt nach `extract_text()`
+
+B) **Chunking robuster machen**  
+   - Chunkgröße kleiner (5000 statt 8000 Zeichen)  
+   - Wenn Text <= 6000 Zeichen → nur ein Call  
+   - `max_tokens=1500` bei jedem API-Call setzen  
+
+   Änderung in `query_llm`:
+   ```python
+   def query_llm(messages, *, temperature=0.0, top_p=0.1, max_tokens=1500):
+       payload = {
+           "model": MODEL_NAME,
+           "messages": messages,
+           "temperature": temperature,
+           "top_p": top_p,
+           "presence_penalty": 0.0,
+           "frequency_penalty": 0.0,
+           "max_tokens": max_tokens
+       }
+       ...
+   ```
+
+## Nächste Schritte (geplant)
+- Normalize-Funktion in main.py einbauen
+- Chunkgröße kleiner, max_tokens fixieren
+- Optional Batch-Datei für Windows (Start mit Doppelklick)
+- Später GUI oder Weboberfläche für Mom/Schule
+- Fernsteuerungsidee (Wake-on-LAN, Meshnet, automatisches Hochfahren)
+
+---
+
+Kurz: Dein Projekt ist jetzt **ein stabiles, lokales PDF→TTS-System mit optionaler Zusammenfassung**, voll offline, modular mit einfachem oder erweitertem Extraktor, und die letzten offenen Schwächen (Silbentrennung, Chunk-Abbrüche) sind bereits lösbar.
