@@ -14,8 +14,7 @@ MODEL_NAME = "meta-llama_-_meta-llama-3-8b-instruct" # aus /v1/models
 
 
 # Betriebsmodus: "clean_for_tts" | "tts_passthrough" | "summary" | "clean_fast"
-MODE = "clean_for_tts"
-
+MODE = "clean_fast"
 
 
 # Extractor: v2 nutzen, falls Datei vorhanden/importierbar

@@ -4,9 +4,6 @@ __pycache__/
 venv/
 .env
 input/
-output/
-txtspace/
-DEV-LOG.txt
 .DS_Store
 Thumbs.db
 .idea/
@@ -14,3 +11,4 @@ old-stuff/
 onhold/
 von-ai/
 backup/
+old/
