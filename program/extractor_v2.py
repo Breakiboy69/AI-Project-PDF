@@ -38,6 +38,13 @@ def extract_text_blocks(page):
                 out_lines.append(text_line)
         out_lines.append("")  # Absatz
     return "\n".join(out_lines).strip()
+if not txt.strip():
+    txt = ocr_page_with_layout(page)
+
+# Wenn OCR und Blöcke beide „mau“ sind, Hinweis einfügen:
+if len(txt.strip().split()) < 5:  # sehr wenig Text -> vermutlich Grafik/Tabelle
+    txt = (txt + f"\n\n[Tabelle/Abbildung auf Seite {int(page.number)+1} – siehe PDF]").strip()
+
 
 
 def extract_annotations(page):

@@ -17,6 +17,35 @@ def normalize_for_tts(text: str) -> str:
     text = re.sub(r"[ \t]{2,}", " ", text)
     # Überlange Leerzeilenfolgen eindampfen
     text = re.sub(r"\n{3,}", "\n\n", text)
+    # Einzelne harte Umbrüche (kein Absatz) in Leerzeichen verwandeln
+    # ALT: text = re.sub(r"(?<![.!?:])\n(?!\n)", " ", text)
+    # NEU: aber NICHT, wenn die nächste Zeile eine Liste/Frage/Überschrift beginnt
+    text = re.sub(
+        r"(?<![.!?:])\n(?!\n)(?=(?!\s*$).*)",
+        lambda m: "\n" if re.match(
+            r"\s*(?:\d+[\).]|Frage\s*\d+|[•\-–]|[A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+){0,3}\s*$)",
+            # Heuristik
+            text[m.end():].splitlines()[0] if text[m.end()::].splitlines() else "") else " ",
+        text
+    )
+
+    def _looks_like_table_line(s: str) -> bool:
+        # Zeilen mit >= 2 Spaltenabständen (mind. zwei Gruppen aus 2+ Spaces)
+        return bool(re.search(r"( {2,}\S+.*){2,}", s))
+
+    # Tabellenzeilen zeilenweise behandeln: 2+ Spaces -> " | "
+    new_lines = []
+    for ln in text.splitlines():
+        if _looks_like_table_line(ln):
+            # bewahre Mehrfachspaces als Spaltentrenner und ersetze sie durch " | "
+            # vorher überzählige Tabs in Spaces umwandeln:
+            ln = re.sub(r"\t+", "  ", ln)
+            ln = re.sub(r" {2,}", " | ", ln.strip())
+            new_lines.append(ln)
+        else:
+            new_lines.append(ln)
+    text = "\n".join(new_lines)
+
     return text.strip()
 
 
