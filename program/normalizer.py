@@ -12,7 +12,7 @@ def normalize_for_tts(text: str) -> str:
     # Silbentrennung am Zeilenende: "so-\nmit" -> "somit"
     text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
     # Einzelne Zeilenumbrüche (kein Absatz) in Space wandeln
-    text = re.sub(r"(?<![.!?:])\n(?!\n)", " ", text)
+    #text = re.sub(r"(?<![.!?:])\n(?!\n)", " ", text) "!wird grad nich geused!"
     # Mehrfach-Leerzeichen reduzieren
     text = re.sub(r"[ \t]{2,}", " ", text)
     # Überlange Leerzeilenfolgen eindampfen
@@ -23,7 +23,7 @@ def normalize_for_tts(text: str) -> str:
     text = re.sub(
         r"(?<![.!?:])\n(?!\n)(?=(?!\s*$).*)",
         lambda m: "\n" if re.match(
-            r"\s*(?:\d+[\).]|Frage\s*\d+|[•\-–]|[A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+){0,3}\s*$)",
+            r"\s*(?:\d+[).]|Frage\s*\d+|[•\-–]|[A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß]+){0,3}\s*$)",
             # Heuristik
             text[m.end():].splitlines()[0] if text[m.end()::].splitlines() else "") else " ",
         text
